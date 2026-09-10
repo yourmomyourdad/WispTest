@@ -1,5 +1,6 @@
 @echo off
-setlocal EnableDelayedExpansion
+setlocal
+
 title Scramjet Browser
 
 cd /d "%~dp0"
@@ -49,22 +50,10 @@ echo.
 echo Scramjet is running!
 echo.
 echo ==========================================
-echo        CLOUDFLARE PUBLIC URL
+echo       CLOUDFLARE PUBLIC URL
 echo ==========================================
 echo.
 
-cloudflared.exe tunnel --url http://127.0.0.1:8080 2>&1 | powershell -NoProfile -Command ^
-    "$input | ForEach-Object { ^
-        Write-Host $_; ^
-        if ($_ -match 'https://[a-zA-Z0-9-]+\.trycloudflare\.com') { ^
-            Write-Host ''; ^
-            Write-Host '========================================='; ^
-            Write-Host '        SCRAMJET PUBLIC ADDRESS'; ^
-            Write-Host '========================================='; ^
-            Write-Host $Matches[0]; ^
-            Write-Host '========================================='; ^
-            Write-Host '' ^
-        } ^
-    }"
+cloudflared.exe tunnel --url http://127.0.0.1:8080
 
 pause
