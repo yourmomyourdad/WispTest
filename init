@@ -1,3 +1,5 @@
+sudo apt update
+sudo apt install -y softether-vpnclient
 git clone https://github.com/MercuryWorkshop/Scramjet-App.git
 cd Scramjet-App
 npm install
