@@ -1,5 +1,4 @@
-npm init -y
-npm install @mercuryworkshop/wisp-js
-cd /workspaces/WispTest/Scramjet-App
+git clone https://github.com/MercuryWorkshop/Scramjet-App.git
+cd Scramjet-App
 npm install
 npm start
