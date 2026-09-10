@@ -1,3 +1,5 @@
 npm init -y
 npm install @mercuryworkshop/wisp-js
+cd /workspaces/WispTest/Scramjet-App
+npm install
 npm start
