@@ -8,88 +8,71 @@ echo ==============================
 echo.
 
 REM ==========================================
-REM Check for WinGet
+REM Check WinGet
 REM ==========================================
 
 where winget >nul 2>&1
 
-if %errorlevel% neq 0 (
+if errorlevel 1 (
     echo ERROR: WinGet is not installed.
-    echo.
-    echo Please install "App Installer" from Microsoft.
-    echo Then run this installer again.
     echo.
     pause
     exit /b 1
 )
 
 REM ==========================================
-REM Install Node.js
+REM Install Node.js if needed
 REM ==========================================
 
-echo Installing Node.js LTS...
+echo Checking Node.js...
 echo.
 
-winget install --id OpenJS.NodeJS.LTS --exact ^
-    --accept-source-agreements ^
-    --accept-package-agreements
-
-if %errorlevel% neq 0 (
-    echo.
-    echo Node.js installation returned an error.
-    echo.
+if exist "C:\Program Files\nodejs\node.exe" (
+    echo Node.js is already installed.
+) else (
+    echo Installing Node.js LTS...
+    winget install --id OpenJS.NodeJS.LTS --exact ^
+        --accept-source-agreements ^
+        --accept-package-agreements
 )
 
 REM ==========================================
-REM Install cloudflared
+REM Install cloudflared if needed
 REM ==========================================
 
 echo.
-echo Installing Cloudflare Tunnel...
+echo Checking cloudflared...
 echo.
 
-winget install --id Cloudflare.cloudflared --exact ^
-    --accept-source-agreements ^
-    --accept-package-agreements
-
-if %errorlevel% neq 0 (
-    echo.
-    echo cloudflared installation returned an error.
-    echo.
+if exist "C:\Program Files (x86)\cloudflared\cloudflared.exe" (
+    echo cloudflared is already installed.
+) else (
+    echo Installing cloudflared...
+    winget install --id Cloudflare.cloudflared --exact ^
+        --accept-source-agreements ^
+        --accept-package-agreements
 )
 
 REM ==========================================
-REM Refresh PATH
+REM Refresh PATH for this script
 REM ==========================================
 
 echo.
-echo Refreshing environment variables...
+echo Refreshing PATH...
 echo.
 
-for /f "tokens=2*" %%A in (
-    'reg query "HKCU\Environment" /v Path 2^>nul'
-) do set "USERPATH=%%B"
-
-for /f "tokens=2*" %%A in (
-    'reg query "HKLM\SYSTEM\CurrentControlSet\Control\Session Manager\Environment" /v Path 2^>nul'
-) do set "SYSTEMPATH=%%B"
-
-set "PATH=%USERPATH%;%SYSTEMPATH%"
+set "PATH=C:\Program Files\nodejs;C:\Program Files (x86)\cloudflared;%PATH%"
 
 REM ==========================================
-REM Check Node
+REM Verify Node
 REM ==========================================
 
 echo.
 echo Checking Node.js...
 echo.
 
-where node >nul 2>&1
-
-if %errorlevel% neq 0 (
-    echo ERROR: Node.js was installed but could not be found.
-    echo.
-    echo Please restart Windows and run this installer again.
+if not exist "C:\Program Files\nodejs\node.exe" (
+    echo ERROR: Node.js could not be found.
     echo.
     pause
     exit /b 1
@@ -99,19 +82,15 @@ node --version
 npm --version
 
 REM ==========================================
-REM Check cloudflared
+REM Verify cloudflared
 REM ==========================================
 
 echo.
 echo Checking cloudflared...
 echo.
 
-where cloudflared >nul 2>&1
-
-if %errorlevel% neq 0 (
-    echo ERROR: cloudflared was installed but could not be found.
-    echo.
-    echo Please restart Windows and run this installer again.
+if not exist "C:\Program Files (x86)\cloudflared\cloudflared.exe" (
+    echo ERROR: cloudflared could not be found.
     echo.
     pause
     exit /b 1
@@ -131,7 +110,7 @@ echo.
 
 call npm install
 
-if %errorlevel% neq 0 (
+if errorlevel 1 (
     echo.
     echo ERROR: npm install failed.
     echo.
@@ -145,13 +124,14 @@ REM ==========================================
 
 echo.
 echo ==============================
-echo       Installation Complete!
+echo   Installation Complete! :D
 echo ==============================
 echo.
-echo Everything is installed.
+echo Node.js:    OK
+echo cloudflared: OK
+echo Wisp:       OK
 echo.
-echo Double-click start-wisp.bat to start
-echo the Wisp server and Cloudflare tunnel.
+echo Double-click start-wisp.bat to start Wisp.
 echo.
 
 pause
