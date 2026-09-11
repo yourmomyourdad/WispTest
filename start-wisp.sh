@@ -31,12 +31,38 @@ echo
 # Check cloudflared
 # ==========================================
 
+# ==========================================
+# Check / Install cloudflared
+# ==========================================
+
 echo "Checking cloudflared..."
 
 if ! command -v cloudflared >/dev/null 2>&1; then
-    echo "ERROR: cloudflared is not installed."
-    echo "Install it in the Codespace first."
-    exit 1
+    echo "cloudflared not found!"
+    echo "Installing cloudflared..."
+
+    sudo apt-get update
+    sudo apt-get install -y curl gnupg
+
+    echo "Adding Cloudflare repository..."
+
+    curl -fsSL https://pkg.cloudflare.com/cloudflare-main.gpg \
+        | sudo tee /usr/share/keyrings/cloudflare-main.gpg >/dev/null
+
+    echo "deb [signed-by=/usr/share/keyrings/cloudflare-main.gpg] https://pkg.cloudflare.com/cloudflared noble main" \
+        | sudo tee /etc/apt/sources.list.d/cloudflared.list >/dev/null
+
+    sudo apt-get update
+    sudo apt-get install -y cloudflared
+
+    if ! command -v cloudflared >/dev/null 2>&1; then
+        echo "ERROR: cloudflared installation failed."
+        exit 1
+    fi
+
+    echo "cloudflared installed!"
+else
+    echo "cloudflared already installed!"
 fi
 
 cloudflared --version
