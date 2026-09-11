@@ -3,7 +3,7 @@ setlocal EnableDelayedExpansion
 setlocal
 
 title Scramjet Browser
-
+set "PORT=8081"
 @@ -13,6 +13,7 @@ echo ==========================================
 echo.
 
@@ -75,7 +75,7 @@ echo              BELOW THIS LINE
 echo ==========================================
 echo.
 
-cloudflared.exe tunnel --url http://127.0.0.1:8080 > "%TEMP%\scramjet-cloudflare.log" 2>&1
-cloudflared.exe tunnel --url http://127.0.0.1:8080
+cloudflared.exe tunnel --url http://127.0.0.1:8081 > "%TEMP%\scramjet-cloudflare.log" 2>&1
+cloudflared.exe tunnel --url http://127.0.0.1:8081
 
 pause
