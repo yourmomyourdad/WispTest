@@ -1,255 +1,81 @@
 @echo off
 setlocal EnableDelayedExpansion
-title Scramjet Browser Installer + Launcher
+setlocal
 
-echo ==========================================
-echo     SCRAMJET + CLOUDFLARE INSTALLER
-echo ==========================================
+title Scramjet Browser
+
+@@ -13,6 +13,7 @@ echo ==========================================
 echo.
-
-REM ==========================================
-REM Configuration
-REM ==========================================
-
-set "PORT=8081"
-set "SCRAMJET_DIR=%~dp0Scramjet-App"
-set "TEMP_DIR=%TEMP%\scramjet-installer"
-set "CF_LOG=%TEMP%\scramjet-cloudflare.log"
-
-if not exist "%TEMP_DIR%" mkdir "%TEMP_DIR%"
-
-REM ==========================================
-REM Check / Install Node.js
-REM ==========================================
 
 echo Checking Node.js...
 
-where node >nul 2>&1
-
-if errorlevel 1 (
-    echo Node.js not found.
+if not exist "C:\Program Files\nodejs\node.exe" (
     echo Installing Node.js...
-
-    winget install OpenJS.NodeJS.LTS --accept-source-agreements --accept-package-agreements
-
-    if errorlevel 1 (
-        echo.
-        echo ERROR: Node.js installation failed.
-        pause
-        exit /b 1
-    )
-
-    echo.
-    echo Node.js installed!
-    echo.
-
-    REM Refresh PATH
-    set "PATH=%PATH%;C:\Program Files\nodejs"
-)
-
-node --version
-npm --version
-
+    winget install --id OpenJS.NodeJS.LTS --exact --accept-source-agreements --accept-package-agreements
+@@ -25,6 +26,7 @@ node --version
 echo.
-
-REM ==========================================
-REM Check / Install Cloudflared
-REM ==========================================
 
 echo Checking cloudflared...
 
-where cloudflared >nul 2>&1
-
-if errorlevel 1 (
-    echo cloudflared not found.
+if not exist "C:\Program Files (x86)\cloudflared\cloudflared.exe" (
     echo Installing cloudflared...
-
-    winget install Cloudflare.cloudflared --accept-source-agreements --accept-package-agreements
-
-    if errorlevel 1 (
-        echo.
-        echo ERROR: cloudflared installation failed.
-        pause
-        exit /b 1
-    )
-
-    echo.
-    echo cloudflared installed!
-    echo.
-
-    REM Refresh PATH
-    set "PATH=%PATH%;C:\Program Files\cloudflared"
-)
-
+    winget install --id Cloudflare.cloudflared --exact --accept-source-agreements --accept-package-agreements
+@@ -36,7 +38,6 @@ echo cloudflared:
 cloudflared --version
-
 echo.
 
-REM ==========================================
-REM Download Scramjet-App if missing
-REM ==========================================
+REM Download Scramjet if necessary
+if not exist "Scramjet-App\package.json" (
+    echo Downloading Scramjet-App...
 
-if exist "%SCRAMJET_DIR%\package.json" (
+@@ -49,15 +50,11 @@ if not exist "Scramjet-App\package.json" (
+    rename "Scramjet-App-main" "Scramjet-App"
+
+    del "scramjet.zip"
+
+    echo Scramjet-App downloaded!
+    echo.
+) else (
     echo Scramjet-App already exists.
-    echo Skipping download.
     echo.
-    goto INSTALL_DEPS
 )
 
-echo Scramjet-App not found.
-echo Downloading official Scramjet-App...
-
-set "ZIP=%TEMP_DIR%\Scramjet-App.zip"
-
-powershell -NoProfile -Command ^
-"$ProgressPreference='SilentlyContinue'; Invoke-WebRequest 'https://github.com/MercuryWorkshop/Scramjet-App/archive/refs/heads/main.zip' -OutFile '%ZIP%'"
-
-if errorlevel 1 (
-    echo.
-    echo ERROR: Failed to download Scramjet-App.
-    pause
-    exit /b 1
-)
-
-echo Download complete!
-echo Extracting...
-
-powershell -NoProfile -Command ^
-"Expand-Archive -Force '%ZIP%' '%TEMP_DIR%\extract'"
-
-if errorlevel 1 (
-    echo.
-    echo ERROR: Failed to extract Scramjet-App.
-    pause
-    exit /b 1
-)
-
-REM GitHub creates Scramjet-App-main
-move "%TEMP_DIR%\extract\Scramjet-App-main" "%SCRAMJET_DIR%" >nul
-
-if not exist "%SCRAMJET_DIR%\package.json" (
-    echo.
-    echo ERROR: Scramjet-App extraction failed.
-    pause
-    exit /b 1
-)
-
-echo Scramjet-App downloaded!
+REM Install dependencies
+echo Scramjet-App ready.
 echo.
 
-REM ==========================================
-REM Install Scramjet dependencies
-REM ==========================================
+cd /d "%~dp0Scramjet-App"
 
-:INSTALL_DEPS
-
-echo ==========================================
-echo Installing Scramjet dependencies
-echo ==========================================
-echo.
-
-cd /d "%SCRAMJET_DIR%"
-
-call npm install
-
-if errorlevel 1 (
-    echo.
-    echo ERROR: npm install failed.
-    pause
-    exit /b 1
+echo Installing dependencies...
+@@ -71,20 +68,24 @@ if errorlevel 1 (
 )
 
 echo.
-echo Dependencies installed!
+echo Dependencies ready!
+echo Dependencies ready.
 echo.
 
-REM ==========================================
 REM Start Scramjet
-REM ==========================================
+echo Starting Scramjet...
+start "" cmd /c "npm start"
 
-echo ==========================================
-echo Starting Scramjet
-echo ==========================================
+REM Give it time to start
+timeout /t 8 /nobreak >nul
+start "" /b npm start
+
+timeout /t 5 /nobreak >nul
+
+REM Start Cloudflare
 echo.
-
-echo Using port %PORT%.
-
-REM Make PORT available to Scramjet
-set "PORT=%PORT%"
-
-start "" /b cmd /c "cd /d ""%SCRAMJET_DIR%"" && set ""PORT=%PORT%"" && npm start"
-
-REM ==========================================
-REM Wait for Scramjet
-REM ==========================================
-
-echo Waiting for Scramjet...
-
-:WAIT_SCRAMJET
-
-powershell -NoProfile -Command ^
-"try { ^
-    $r=Invoke-WebRequest -UseBasicParsing 'http://127.0.0.1:%PORT%/' -TimeoutSec 2; ^
-    if($r.StatusCode -ge 200 -and $r.StatusCode -lt 500){exit 0}else{exit 1} ^
-} catch {exit 1}"
-
-if not errorlevel 1 goto SCRAMJET_READY
-
-timeout /t 1 /nobreak >nul
-goto WAIT_SCRAMJET
-
-
-:SCRAMJET_READY
-
-echo Scramjet is ready!
+echo Starting Cloudflare tunnel...
 echo.
-
-REM ==========================================
-REM Start Cloudflare Tunnel
-REM ==========================================
-
 echo ==========================================
-echo Starting Cloudflare tunnel
+echo        YOUR PUBLIC URL WILL APPEAR
+echo              BELOW THIS LINE
 echo ==========================================
 echo.
 
-del "%CF_LOG%" >nul 2>&1
-
-start "" /b cmd /c "cloudflared tunnel --protocol http2 --url http://127.0.0.1:%PORT% > ""%CF_LOG%"" 2>&1"
-
-REM ==========================================
-REM Wait for Cloudflare URL
-REM ==========================================
-
-echo Waiting for Cloudflare URL...
-
-set "URL="
-
-:WAIT_CLOUDFLARE
-
-for /f "delims=" %%A in ('powershell -NoProfile -Command "$x=Get-Content -Raw -ErrorAction SilentlyContinue '%CF_LOG%'; if($x -match 'https://[a-zA-Z0-9-]+\.trycloudflare\.com'){ $Matches[0] }"') do (
-    set "URL=%%A"
-)
-
-if defined URL goto DONE
-
-timeout /t 1 /nobreak >nul
-goto WAIT_CLOUDFLARE
-
-
-:DONE
-
-cls
-
-echo ==========================================
-echo                  DONE! :D
-echo ==========================================
-echo.
-echo Here's your URL:
-echo.
-echo %URL%
-echo.
-echo Keep this window open!
-echo.
+cloudflared.exe tunnel --url http://127.0.0.1:8080 > "%TEMP%\scramjet-cloudflare.log" 2>&1
+cloudflared.exe tunnel --url http://127.0.0.1:8080
 
 pause
