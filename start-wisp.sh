@@ -189,16 +189,23 @@ done
 
 echo
 echo "=========================================="
-echo " DONE! HERE IS YOUR URL:"
+echo " YOUR SCRAMJET URL:"
 echo "$URL"
 echo "=========================================="
 
-curl -X POST "https://scramregister.blackj9898.workers.dev/set" \
-     -H "Content-Type: application/json" \
-     -d "{\"url\":\"$URL\"}"
+echo "Starting heartbeat..."
 
-echo
-echo "URL sent to worker!"
-echo
+while true
+do
+    curl -X POST \
+      "https://scramregister.blackj9898.workers.dev/set" \
+      -H "Content-Type: application/json" \
+      -d "{\"url\":\"$URL\"}" \
+      >/dev/null 2>&1
+
+    sleep 30
+done &
+
+echo "URL heartbeat active!"
 
 wait $CLOUDFLARED_PID
