@@ -1,46 +1,114 @@
 #!/bin/bash
 
+set -e
+
 PORT=8081
-SCRAMJET_DIR="$(cd "$(dirname "$0")/Scramjet-App" && pwd)"
+BASE="$(cd "$(dirname "$0")" && pwd)"
+SCRAMJET="$BASE/Scramjet-App"
+ZIP="$BASE/scramjet.zip"
 
 echo "=========================================="
-echo "         SCRAMJET + CLOUDFLARE"
+echo "     SCRAMJET + CLOUDFLARE INSTALLER"
 echo "=========================================="
 echo
 
-echo "Checking Scramjet-App..."
+# ==========================================
+# Check Node.js
+# ==========================================
 
-if [ ! -f "$SCRAMJET_DIR/package.json" ]; then
-    echo "ERROR: Scramjet-App was not found."
+echo "Checking Node.js..."
+
+if ! command -v node >/dev/null 2>&1; then
+    echo "ERROR: Node.js is not installed."
     exit 1
 fi
 
+node --version
+npm --version
 echo
-echo "Installing dependencies..."
-cd "$SCRAMJET_DIR"
+
+# ==========================================
+# Check cloudflared
+# ==========================================
+
+echo "Checking cloudflared..."
+
+if ! command -v cloudflared >/dev/null 2>&1; then
+    echo "ERROR: cloudflared is not installed."
+    echo "Install it in the Codespace first."
+    exit 1
+fi
+
+cloudflared --version
+echo
+
+# ==========================================
+# Download Scramjet-App
+# ==========================================
+
+if [ -f "$SCRAMJET/package.json" ]; then
+    echo "Scramjet-App already exists."
+else
+    echo "Scramjet-App not found."
+    echo "Downloading Scramjet-App..."
+
+    curl -L \
+        "https://github.com/MercuryWorkshop/Scramjet-App/archive/refs/heads/main.zip" \
+        -o "$ZIP"
+
+    echo "Extracting..."
+
+    unzip -q "$ZIP" -d "$BASE"
+
+    mv "$BASE/Scramjet-App-main" "$SCRAMJET"
+
+    rm "$ZIP"
+
+    echo "Scramjet-App downloaded!"
+fi
+
+echo
+
+# ==========================================
+# Install dependencies
+# ==========================================
+
+echo "=========================================="
+echo "       INSTALLING DEPENDENCIES"
+echo "=========================================="
+echo
+
+cd "$SCRAMJET"
+
 npm install
-
-if [ $? -ne 0 ]; then
-    echo
-    echo "ERROR: npm install failed."
-    exit 1
-fi
 
 echo
 echo "Dependencies ready!"
 echo
 
+# ==========================================
+# Start Scramjet
+# ==========================================
+
+echo "=========================================="
+echo "          STARTING SCRAMJET"
+echo "=========================================="
+echo
+
 echo "Starting Scramjet on port $PORT..."
 
-PORT=$PORT npm start > /tmp/scramjet.log 2>&1 &
+PORT="$PORT" npm start > /tmp/scramjet.log 2>&1 &
 SCRAMJET_PID=$!
 
 echo "Scramjet PID: $SCRAMJET_PID"
 echo "Waiting for Scramjet..."
 
-until curl -s --max-time 2 "http://127.0.0.1:$PORT/" > /dev/null 2>&1; do
-    sleep 1
+# ==========================================
+# Wait for Scramjet
+# ==========================================
 
+while ! curl -s --max-time 2 "http://127.0.0.1:$PORT/" >/dev/null 2>&1
+do
     if ! kill -0 "$SCRAMJET_PID" 2>/dev/null; then
         echo
         echo "ERROR: Scramjet stopped unexpectedly."
@@ -48,10 +116,17 @@ until curl -s --max-time 2 "http://127.0.0.1:$PORT/" > /dev/null 2>&1; do
         cat /tmp/scramjet.log
         exit 1
     fi
+
+    sleep 1
 done
 
+echo
 echo "Scramjet is ready!"
 echo
+
+# ==========================================
+# Start Cloudflare
+# ==========================================
 
 echo "=========================================="
 echo "       STARTING CLOUDFLARE TUNNEL"
