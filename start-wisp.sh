@@ -157,24 +157,30 @@ echo
 echo "=========================================="
 echo "       STARTING CLOUDFLARE TUNNEL"
 echo "=========================================="
-echo
-
 echo "Starting Cloudflare tunnel..."
+
+LOG="/tmp/cloudflared.log"
+
+rm -f "$LOG"
 
 cloudflared tunnel \
     --protocol http2 \
     --url "http://127.0.0.1:$PORT" \
-    > /tmp/cloudflared.log 2>&1 &
+    > "$LOG" 2>&1 &
 
 CLOUDFLARED_PID=$!
 
 echo "Waiting for tunnel URL..."
 
+while [ ! -f "$LOG" ]; do
+    sleep 1
+done
+
 while true
 do
-    URL=$(grep -o "https://[a-zA-Z0-9-]*\.trycloudflare\.com" /tmp/cloudflared.log | head -1)
+    URL=$(grep -oE "https://[a-zA-Z0-9-]+\.trycloudflare\.com" "$LOG" | head -1 || true)
 
-    if [ ! -z "$URL" ]; then
+    if [ -n "$URL" ]; then
         break
     fi
 
@@ -183,7 +189,7 @@ done
 
 echo
 echo "=========================================="
-echo " YOUR SCRAMJET URL:"
+echo " DONE! HERE IS YOUR URL:"
 echo "$URL"
 echo "=========================================="
 
