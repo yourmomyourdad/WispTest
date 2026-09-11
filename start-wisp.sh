@@ -159,6 +159,40 @@ echo "       STARTING CLOUDFLARE TUNNEL"
 echo "=========================================="
 echo
 
+echo "Starting Cloudflare tunnel..."
+
 cloudflared tunnel \
     --protocol http2 \
-    --url "http://127.0.0.1:$PORT"
+    --url "http://127.0.0.1:$PORT" \
+    > /tmp/cloudflared.log 2>&1 &
+
+CLOUDFLARED_PID=$!
+
+echo "Waiting for tunnel URL..."
+
+while true
+do
+    URL=$(grep -o "https://[a-zA-Z0-9-]*\.trycloudflare\.com" /tmp/cloudflared.log | head -1)
+
+    if [ ! -z "$URL" ]; then
+        break
+    fi
+
+    sleep 1
+done
+
+echo
+echo "=========================================="
+echo " YOUR SCRAMJET URL:"
+echo "$URL"
+echo "=========================================="
+
+curl -X POST "https://scramregister.blackj9898.workers.dev/set" \
+     -H "Content-Type: application/json" \
+     -d "{\"url\":\"$URL\"}"
+
+echo
+echo "URL sent to worker!"
+echo
+
+wait $CLOUDFLARED_PID
